@@ -1,0 +1,123 @@
+<?php
+
+// $Id$
+
+/**
+ *@file
+ * Mucking about with the aggregator module
+ * 
+ */
+
+/**
+ *  Implements hook_block_info()
+ */
+function ncpedia_agg_block_info() {
+  $blocks['nchistory'] = array(
+      'info' => t('This Day in North Carolina History'),
+      'cache' => DRUPAL_CACHE_PER_ROLE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view
+ */
+function ncpedia_agg_block_view($delta='') {
+  $block['subject'] = t('This Day in North Carolina History');
+  $block['content'] = ncpedia_agg_block_contents($delta);
+  
+  return $block;
+}
+
+function ncpedia_agg_block_contents($which_block) {
+  
+  if ($which_block === 'nchistory') {
+    $return_str = '';
+
+    $query = db_select('aggregator_item', 'ai') 
+      ->fields('ai', array('title', 'link', 'description'))     
+      ->condition('fid', 2)
+      ->orderBy('iid', 'DESC')
+      ->range(0,5)
+      ->addTag('node access');
+    $result = $query->execute();
+    
+    $firstrow = TRUE;
+    foreach($result as $row) {
+      $img_src = '';
+      $first_sentence = '';
+      if (preg_match('/\<img.+?src="(.+?)".+?\/>/si', $row->description, $img_matches)) {
+        $img_src = '<div class="nchistory-agg-pic"><img src="' . $img_matches[1] . '" style="height:100px;" /></div>';
+      }
+      if (preg_match('/\On\s?.+?\s[a-z]+\./s', strip_tags($row->description), $fs_matches)) {
+        $first_sentence = '<div class="nchistory-agg-headline">' . $fs_matches[0] . '</div>';
+      }
+      if ($firstrow) {
+        $firstrow = FALSE;
+        $return_str .= '<p class="nchistory-agg-item-today">' . l($row->title, $row->link) . '</p>';
+        $return_str .= $img_src . $first_sentence;
+        $return_str .= '<p class="nchistory-agg-item-old">Previous days: ';
+      }
+      else {
+        $return_str .= l($row->title, $row->link) . ' | ';
+      }  
+    }
+    $return_str .= '<a href="http://nchistorytoday.wordpress.com/">More...</a></p>';
+
+    return $return_str; 
+  }
+}
+
+
+//Page-creation function
+//Currently disabled
+//
+//function ncpedia_agg_menu() {
+//
+//  $items['agg'] = array(
+//    'page callback' => 'ncpedia_agg_page',     
+//    'access arguments' => array('access content'),
+//    'type' => MENU_CALLBACK,
+//  );  
+//  return $items;
+//}
+//function ncpedia_agg_page(){
+//  
+//  $return_str = '<p></p><p></p><p></p><div id="block-ncpedia_agg-nchistory">';
+//  
+//      $query = db_select('aggregator_item', 'ai') 
+//      ->fields('ai', array('title', 'link', 'description'))     
+//      ->condition('fid', 2)
+//      ->orderBy('iid', 'DESC')
+//      ->range(1,5)
+//      ->addTag('node access');
+//    $result = $query->execute();
+//    $firstrow = TRUE;
+//    
+//    $t = 'On January 17, 1874, St. Bill was knighted. He was good.';
+//       
+//    
+//    foreach($result as $row) {
+//      $img_src = '';
+//      $first_sentence = '';
+//      if (preg_match('/\<img.+?src="(.+?)".+?\/>/si', $t, $img_matches)) {
+//        $img_src = '<div class="nchistory-agg-pic"><img src="' . $img_matches[1] . '" style="height:100px;" /></div>';
+//      }
+//      if (preg_match('/\On\s?\<b\>.+?\s[a-z]+\./s', strip_tags($t), $fs_matches)) {
+//        $first_sentence = '<div class="nchistory-agg-headline">' . $fs_matches[0] . '</div>';
+//      }
+//      if ($firstrow) {
+//        $firstrow = FALSE;
+//        $return_str .= '<p class="nchistory-agg-item-today">' . l($row->title, $row->link) . '</p>';
+//        $return_str .= $img_src . $first_sentence;
+//        $return_str .= '<p class="nchistory-agg-item-old">Previous days: ';
+//      }
+//      else {
+//        $return_str .= l($row->title, $row->link) . ' | ';
+//      }  
+//    }
+//    $return_str .= '<a href="http://nchistorytoday.wordpress.com/">More...</a></p></div>';
+//
+//    return $return_str; 
+//    
+//}
