@@ -44,18 +44,39 @@ function ncpedia_agg_block_contents($which_block) {
     
     $firstrow = TRUE;
     foreach($result as $row) {
+      //Grab image, if available
       $img_src = '';
-      $first_sentence = '';
       if (preg_match('/\<img.+?src="(.+?)".+?\/>/si', $row->description, $img_matches)) {
         $img_src = '<div class="nchistory-agg-pic"><img src="' . $img_matches[1] . '" style="height:100px;" /></div>';
       }
-      if (preg_match('/\On\s?.+?\s[a-z]+\./s', strip_tags($row->description), $fs_matches)) {
-        $first_sentence = '<div class="nchistory-agg-headline">' . $fs_matches[0] . '</div>';
+      //Grab first two sentences for the text snippet. This is sorta flaky. It would get
+      //tripped up by "Ft." or "St." or "Rd." etc. and cut off mid-sentence or be very short. 
+      //Or, it could get quite long. So if the snippet is especially short or long, just take 
+      //130 characters, find the next word break, and cut it off there.
+      $snippet = '';
+      if (preg_match('/On\s.+?\..+?\./s', strip_tags($row->description), $text_matches)) {
+        //Start the snippet with a div wrapper, set the text content to the regex match
+        $snippet = '<div class="nchistory-agg-headline">';
+        $snippet_text = $text_matches[0];
+        //If the text is especially long, try just one sentence instead
+        if (strlen($snippet_text) > 250) {
+          $snippet_text = substr($snippet_text, 0, stripos($snippet_text, '. ') + 1);
+        }
+        //Now make sure the regex match or its shorter version isn't especially short either.
+        //If it is, just grab the first 130 characters (or so; stop at a word break) of the
+        //original match and append an ellipsis
+        if (strlen($snippet_text) < 80) {
+          $snippet .= substr($text_matches[0], 0, stripos($text_matches[0], ' ', 130)) . '...';
+        }
+        else {
+          $snippet .= $snippet_text;  
+        }
+        $snippet .= '</div>';
       }
       if ($firstrow) {
         $firstrow = FALSE;
         $return_str .= '<p class="nchistory-agg-item-today">' . l($row->title, $row->link) . '</p>';
-        $return_str .= $img_src . $first_sentence;
+        $return_str .= $img_src . $snippet;
         $return_str .= '<p class="nchistory-agg-item-old">Previous days: ';
       }
       else {
