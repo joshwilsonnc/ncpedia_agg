@@ -65,8 +65,9 @@ function ncpedia_agg_block_contents($which_block) {
         //Now make sure the regex match or its shorter version isn't especially short either.
         //If it is, just grab the first 130 characters (or so; stop at a word break) of the
         //original match and append an ellipsis
-        if (strlen($snippet_text) < 80) {
-          $snippet .= substr($text_matches[0], 0, stripos($text_matches[0], ' ', 130)) . '...';
+        if (strlen($snippet_text) < 60) {
+          $new_length = strlen($text_matches[0]) > 130 ? 130 : strlen($text_matches[0]);          
+          $snippet .= substr($text_matches[0], 0, stripos($text_matches[0], ' ', $new_length)) . '...';
         }
         else {
           $snippet .= $snippet_text;  
